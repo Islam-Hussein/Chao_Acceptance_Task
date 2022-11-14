@@ -1,8 +1,8 @@
 #include "acceptance_task.h"
 
-extern uint8_t capture_buf[];
+uint8_t capture_buf[SAMPLING_BUFFER_SIZE];
 
-extern uint8_t *sample_address_pointer;
+uint8_t *sample_address_pointer = &capture_buf[0];
 
 static i2c_inst_t *I2C_CH_ADXL345;
 
@@ -57,8 +57,10 @@ void ADC_Input_Init(void)
     adc_gpio_init(26 + CAPTURE_CHANNEL);
 
     adc_select_input(CAPTURE_CHANNEL);
+    
 
-    adc_fifo_setup(
+    adc_fifo_setup
+    (
         true,  // Write each completed conversion to the sample FIFO
         true,  // Enable DMA data request (DREQ)
         1,     // DREQ (and IRQ) asserted when at least 1 sample present
@@ -66,7 +68,9 @@ void ADC_Input_Init(void)
         true   // Shift each sample to 8 bits when pushing to FIFO
     );
 
-    }
+    ADC_Set_SamplingRate();
+
+}
 
 void ADC_Sample_Capture(void)
 {
@@ -80,31 +84,33 @@ void ADC_Sample_Capture(void)
     channel_config_set_write_increment(&cfg, true);
     // Pace transfers based on availability of ADC samples
     channel_config_set_dreq(&cfg, DREQ_ADC);
-
-    dma_channel_configure(
+    
+    dma_channel_configure
+    (
         DMA_CHANNEL,
         &cfg,
-        //sample_address_pointer,   // dst
-        capture_buf,
+        sample_address_pointer,   // dst
         &adc_hw->fifo,            // src
         SAMPLING_BUFFER_SIZE,     // transfer count
-        true                      // start immediately
+        true  // start immediately
     );
     
 
     adc_run(true);
 
+
     dma_channel_wait_for_finish_blocking(DMA_CHANNEL);
 
-    
-    for(int i = 0 ; i < SAMPLING_BUFFER_SIZE ; i += 10)
+
+    for (int i = 0; i < SAMPLING_BUFFER_SIZE; i += 5)
     {
-        printf("%d \n" , capture_buf[i]);
+        printf(" %d \n", capture_buf[i]);
     }
     
+
     adc_run(false);
     adc_fifo_drain();
-
+    
 }
 
 
@@ -123,7 +129,7 @@ void ADXLl345_Init(void)
 
     // Adjust FIFO Mode to Triggered Mode as we don't have INT1 or INT2 connected to pico
     // Adjust Max. no. OF Samples to 32 Sample
-    cmd_buffer[0]=  0x38;
+    cmd_buffer[0]=  ADXL345_REG_FIFO_CTL;
     cmd_buffer[1] = 0xDF;
     i2c_write_blocking(I2C_CH_ADXL345, ADXL345_SLAVE_ADDR, cmd_buffer, 2, false);
 

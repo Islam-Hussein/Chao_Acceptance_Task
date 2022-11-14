@@ -15,11 +15,9 @@
 #include "hardware/dma.h"
 #include "sensor_lib/acceptance_task.h"
 
+extern uint8_t capture_buf[];
 
-
-uint8_t capture_buf[SAMPLING_BUFFER_SIZE];
-
-uint8_t *sample_address_pointer = &capture_buf[0];
+extern uint8_t *sample_address_pointer;
 
 static uint8_t Global_cnt = 0;
 
@@ -32,9 +30,8 @@ int main()
     stdio_init_all();
     printf("ADC Example, measuring GPIO26\n");
 
-    ADC_Set_SamplingRate();
 
-    ADC_Input_Init();
+
 
     setup_i2c0();
     setup_i2c1();
@@ -48,21 +45,15 @@ int main()
         if (c == 'k')
            {
 
-            ADC_Set_SamplingRate();
+            printf("ADC Values:-\r\n");
 
             ADC_Input_Init();
-
-            printf("ADC Values:-\r\n");
 
             ADC_Sample_Capture();
 
 
              
-            printf("ADC Values:-\r\n");
-            for (int i = 0; i < SAMPLING_BUFFER_SIZE; i++)
-            {
-                printf(" %d \n", capture_buf[i]);
-            }
+ 
         }
 
         
